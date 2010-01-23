@@ -1,0 +1,26 @@
+﻿<UserCombinePreferences version="1.0" filename="/home/yazgoo/development/dreamcast/mt5_extraction_tools/src/ymt5gui/ymt5gui.sln">
+  <Files>
+    <File name="Bienvenue" />
+    <File name="ymt5gui/Main.cs" line="1" column="1" />
+    <File name="ymt5gui/MainWindow.cs" line="40" column="1" />
+    <File name="ymt5gui/AssemblyInfo.cs" line="1" column="1" />
+    <File name="ymt5gui/gtk-gui/window1.cs" line="1" column="1" />
+  </Files>
+  <Views>
+    <ViewMemento id="ProjectPad">
+      <Node expanded="True">
+        <Node name="ymt5gui" expanded="True">
+          <Node name="gtk-gui" expanded="True" />
+          <Node name="MainWindow.cs" selected="True" />
+        </Node>
+      </Node>
+    </ViewMemento>
+    <ViewMemento id="ClassPad">
+      <Node expanded="True" />
+    </ViewMemento>
+  </Views>
+  <Properties>
+    <Property key="ActiveWindow" value="/home/yazgoo/development/dreamcast/mt5_extraction_tools/src/ymt5gui/ymt5gui/MainWindow.cs" />
+    <Property key="ActiveConfiguration" value="Debug|Any CPU" />
+  </Properties>
+</UserCombinePreferences>

@@ -1,0 +1,114 @@
+This file aims to reverse engineer mt5 files
+- header seems to stop at : byte 48
+- first 4 bytes are : "HRCM"
+- byte 4 : file size - 52 (52 may be the header size)
+- byte 8 : file size - 52 - something
+- textures start at "TEXD"..."TEXN" and are PVRT texture (this document won't
+	describe PVRT which was already done)
+headers :
+byte 0-3 : HRCM
+byte 4-7 : texture entry point
+- mesh data :
+	32768 = 0x8000 : 10000000 00000000
+	51200 = 0xc800 : 11001000 00000000
+	65532 = 0xfffc : 11111111 11111100
+	in the beginning, high frquency of 0xfcff : may be a delimiter
+	the delimiter may be on less bits : 0xfaff 0xfbff also 
+	maybe faces
+	content of these delimiters varies in size (eg. 8, 22, 8, 36)
+	these delimiters contains indices (shorts) (maybe to vertices)
+	they also contain something else which isn't vertices indices (>65530),
+	maybe texture indices ?
+	face phase seems to end with 0x0080ffff
+	after, maybe vertices
+	other out 'special' values : those value, mixed in vertex data do not 
+		represent any vertex (they may be marked, too):
+			1088 = 0x0440
+			8192 = 0x2000
+			6426 = 
+			1022 = 
+			514 = 
+			970 = 
+	vertices data seems stripified, which make obj f usable
+	only after a reordeing
+- vertices : just after faces, there is an alternance on each line :
+	- vertex
+	- something, normal maybe
+	- vertex
+	...
+	ends with "__3f ffff"
+separator may contain next face data size :
+	eg :
+	0x0e00 : 1
+	0xfaff : 6
+	0xfcff : 4
+	0x8103 : 2
+
+	0x0200
+Cannot find any 'separtor' common point
+maybe 'separtors' are just face haders containing the number of vertices of 
+the current face
+
+___________________
+
+Last found :
+
+(__ff (vertex short short)*)*
+_____________
+
+        <li>Faces data (not quite sure yet) .
+                <ul>
+                        <li>
+				 Each "face block" seems to  :
+				<ul>
+				<li>List vertices index (unsigned short) as triangle
+				strip</li>
+				<li>List other things</li>
+				<li>be spearated from the next by a short having it's 
+				high byte 0xff</li>
+                        	</ul>
+			</li>
+                        <li>Ends with 0x0080ffff<li>
+                </ul>
+        </li>
+	<li>Next comes vertices data (in fact there is more):
+		<ul>
+			<li>a block is three floats</li>
+			<li>every pair block is a new vertex</i>
+			<li>every odd block is something else(maybe normals)</i>
+		</ul>
+
+	</li>
+
+The main goal of this work is to extract at least faces and vertices,
+Here are some images to show my current work :
+
+___________________
+texture separating sequence
+File begining			# at byte 1a
+0000 0200 1000 2e00 8c80 0000
+00c8 4024 0020 0000 0800 0900
+0000 0b00 0004 1100 ac09 5a00   # before last byte
+				# seems to indicate next block offset from end
+f 10 9 8 7 1 47 51201 1 2 18	# at byte 9e6
+0000 0300 1000 2e00 8c82 0000
+00c8 4024 0094 0000 0800 0900
+0100 0b00 0004 1100 d400 0800	# first byte of this line seems to be the 
+				# texture number
+f 27 28 25 26 1 47 51201 1 3 18 # at byte 0xada
+0000 0300 1000 2e00 8c82 0000 
+00c8 4024 0094 0000 0800 0900
+0200 0b00 0004 1100 e408 4b00
+f 146 145 147 144 3 32909 9281 9 12 1237
+**** 0200 1000 2e00 8c80 0000  # shifted 1
+00c8 4024 0020 0000 0800 0900 
+0000 0b00 0004 1100 d404 2f00
+___________________
+Texture mapping
+two shorts :
+	. short1 : 
+		. lower bits : which texture
+		. up : percent (x)
+	. short2 : percent
+
+
