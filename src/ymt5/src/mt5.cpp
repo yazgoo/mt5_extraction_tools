@@ -5,7 +5,10 @@
 *******************************************************************************/
 #include "mt5.h"
 #include <iostream>
-
+// uguu
+#include <float.h>
+#include <math.h>
+// uguu
 void mt5::parseHeaders()
 {
 	this->input.read(this->headers, this->headersSize);
@@ -16,12 +19,7 @@ void mt5::parseHeaders()
 		*(reinterpret_cast<unsigned int*>(&(headers[4])));
 	this->firstFooterEnd = 
 		*(reinterpret_cast<unsigned int*>(&(headers[8])));
-    this->input.seekg(this->firstFooterEnd - 32, ios_base::beg);
-	/*this->input.seekg(this->textureEntryPoint - 12, ios_base::beg);
-    unsigned int firstFooterAddress;
-	this->input.read(reinterpret_cast<char*>(&firstFooterAddress), 4);
-    cout << "footer origin : 0x" << hex << firstFooterAddress << endl;
-	this->input.seekg(firstFooterAddress, ios_base::beg);*/
+    this->input.seekg(this->firstFooterEnd, ios_base::beg);
 }
 
 int mt5::parseHeadingBlock()
@@ -31,7 +29,6 @@ int mt5::parseHeadingBlock()
         this->input.read(reinterpret_cast<char*>(headingBlock), 34) != NULL
 			&& headingBlock[1] == 0x10)
 	{
-		// original : this->currentBlockSize = headingBlock[15] - 2;
 		this->currentBlockSize = headingBlock[15] - 2;
 		this->currentTextureNumber = headingBlock[11];
 		if(this->currentTextureNumber >= this->texturesNumber)
@@ -104,6 +101,7 @@ void mt5::parseFaces()
 
 int mt5::parseObjectFooters()
 {
+        static int j = 0;
 	if (this->input.read(reinterpret_cast<char*>(&(this->footers)),
 				sizeof(Footers)) != NULL)
 	{
@@ -116,6 +114,8 @@ int mt5::parseObjectFooters()
 
 void mt5::parseVerticesAndNormals()
 {
+    vectors3d stats_min = {FLT_MAX, FLT_MAX, FLT_MAX};
+    vectors3d stats_max = {FLT_MIN, FLT_MIN, FLT_MIN};
 	vectors3d vect;
 	long long i;
 	static unsigned int sum = 0;
@@ -123,24 +123,67 @@ void mt5::parseVerticesAndNormals()
 	{
 		this->input.read(reinterpret_cast<char*>(&vect),
 				sizeof(vectors3d));
-		if((i % 2) == 0) this->vertices.push_back(vect);
+		if((i % 2) == 0)
+        {
+            if(vect.x > stats_max.x) stats_max.x = vect.x;
+            if(vect.y > stats_max.y) stats_max.y = vect.y;
+            if(vect.z > stats_max.z) stats_max.z = vect.z;
+            if(vect.x < stats_min.x) stats_min.x = vect.x;
+            if(vect.y < stats_min.y) stats_min.y = vect.y;
+            if(vect.z < stats_min.z) stats_min.z = vect.z;
+#ifndef FOOTER_PARSING
+                vect.x += this->objectTableItem.x;
+                vect.y += this->objectTableItem.y;
+                vect.z += this->objectTableItem.z;
+#endif
+            this->vertices.push_back(vect);
+        }
 		else this->normals.push_back(vect);
 	}
     this->facesOffset += this->footers.verticesNumber;
-	this->input.seekg((int)this->footers.endOfPreviousFooter - 32
-			, ios_base::beg);
 }
 
 void mt5::parse()
 {
     this->facesOffset = 0;
 	this->parseHeaders();
+#ifdef FOOTER_PARSING
+    this->input.seekg(-32, ios_base::cur);
 	while(this->parseObjectFooters())
 	{
+        /*static unsigned int index = 0;
+        cout << index++ 
+            << " " << hex << this->input.tellg() << endl;*/
 		this->parseFaces();
 		this->parseVerticesAndNormals();
+        this->input.seekg((int)this->footers.endOfPreviousFooter - 32
+                , ios_base::beg);
 	    if(this->footers.endOfPreviousFooter <= 28) break;
 	}
+#endif
+#ifndef FOOTER_PARSING
+    do 
+    {
+        this->input.read(reinterpret_cast<char*>(&this->objectTableItem), 
+                sizeof(this->objectTableItem));
+        this->nextObjectTableItemStart = (unsigned int)this->input.tellg();
+        if(this->objectTableItem.footerStart != 0)
+        {
+            this->input.seekg((int)this->objectTableItem.footerStart,
+                    ios_base::beg);
+            this->parseObjectFooters();
+            this->parseFaces();
+            this->parseVerticesAndNormals();
+            this->input.seekg(this->nextObjectTableItemStart,
+                    ios_base::beg);
+            /*
+            static unsigned int index = 0;
+            cout << index++ 
+                << " " << hex << this->objectTableItem.footerStart << endl;*/
+        }
+    }
+    while(this->nextObjectTableItemStart < this->textureEntryPoint);
+#endif
 }
 
 mt5::mt5(string& filePath) : texturesNumber(0), 
