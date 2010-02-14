@@ -39,7 +39,7 @@ tar_bz2-pkg :
 binaries :
 	make linux32-bin && make win32-bin
 win32-bin :
-	EXT=".exe" SYSTEM_TARGET=win32 CONFIGURE_OPTION="--host=i586-mingw32msvc" \
+	EXT="" SYSTEM_TARGET=win32 CONFIGURE_OPTION="--host=i586-mingw32msvc" \
 	LDFLAGS=-static-libgcc \
 	make any-bins
 linux32-bin :

@@ -1,0 +1,20 @@
+[ MT5 extraction tools ]
+
+[ Information ]
+
+	Those tools aim to provide tools to extract MT5 files.
+
+[ Licensing ]
+
+	They are mainly distributed under Berkley Software License 
+	unless specified (see specific COPYING files in src/ directories).
+
+[ Compilation ]
+
+	`make binaries` should both create binaries for windows and linux
+	provided you have the good toolchain.
+
+[ Packaging ]
+
+	`make packages` should generate both zip and tar bz2 source and binary 
+	packages provided ../pkg/ directory (output directory) exists.
