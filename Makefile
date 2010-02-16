@@ -39,7 +39,7 @@ tar_bz2-pkg :
 binaries :
 	make linux32-bin && make win32-bin
 win32-bin :
-	EXT="" SYSTEM_TARGET=win32 CONFIGURE_OPTION="--host=i586-mingw32msvc" \
+	EXT=".exe" SYSTEM_TARGET=win32 CONFIGURE_OPTION="--host=i586-mingw32msvc" \
 	LDFLAGS=-static-libgcc \
 	make any-bins
 linux32-bin :
@@ -51,8 +51,8 @@ any-bins :
 get-autotools-bin :
 	cd src/${YTARGET} && \
 	./configure ${CONFIGURE_OPTION} \
-	&& make && cp src/${YTARGET}${EXT} \
-	../../bin/${SYSTEM_TARGET}/ && make distclean
+	&& make && cp src/${YTARGET} \
+	../../bin/${SYSTEM_TARGET}/${YTARGET}${EXT} && make distclean
 get-mono-exe :
 	cp src/${YTARGET}/${YTARGET}/bin/Debug/${YTARGET}.exe \
 	bin/${SYSTEM_TARGET}/ && if [ "${SYSTEM_TARGET}" = "win32" ]; then \

@@ -112,10 +112,26 @@ int mt5::parseObjectFooters()
 	else return 0;
 }
 
+void mt5::rotate(vectors3d& input)
+{
+    vectors3d tmp = input;
+    float A = cos(xAngle);
+    float B = sin(xAngle);
+    float C = cos(yAngle);
+    float D = sin(yAngle);
+    float E = cos(zAngle);
+    float F = sin(zAngle);
+    input.x = C * E * tmp.x - C * F * tmp.y - D * tmp.z;
+    input.y = (A * F + B * D * E) * tmp.x 
+        + (A * E - B * D * F) * tmp.y 
+        - B * C * tmp.z;
+    input.z = (B * F + A * D * E) * tmp.x 
+        + (B * E - A * D * F) * tmp.y 
+        + A * C * tmp.z;
+}
+
 void mt5::parseVerticesAndNormals()
 {
-    vectors3d stats_min = {FLT_MAX, FLT_MAX, FLT_MAX};
-    vectors3d stats_max = {FLT_MIN, FLT_MIN, FLT_MIN};
 	vectors3d vect;
 	long long i;
 	static unsigned int sum = 0;
@@ -124,20 +140,18 @@ void mt5::parseVerticesAndNormals()
 		this->input.read(reinterpret_cast<char*>(&vect),
 				sizeof(vectors3d));
 		if((i % 2) == 0)
-        {
-            if(vect.x > stats_max.x) stats_max.x = vect.x;
-            if(vect.y > stats_max.y) stats_max.y = vect.y;
-            if(vect.z > stats_max.z) stats_max.z = vect.z;
-            if(vect.x < stats_min.x) stats_min.x = vect.x;
-            if(vect.y < stats_min.y) stats_min.y = vect.y;
-            if(vect.z < stats_min.z) stats_min.z = vect.z;
+		{
 #ifndef FOOTER_PARSING
-                vect.x += this->objectTableItem.x;
-                vect.y += this->objectTableItem.y;
-                vect.z += this->objectTableItem.z;
+            this->rotate(vect);
+			vect.x *= this->objectTableItem.scaleX;
+			vect.y *= this->objectTableItem.scaleY;
+			vect.z *= this->objectTableItem.scaleZ;
+			vect.x += this->objectTableItem.x;
+			vect.y += this->objectTableItem.y;
+			vect.z += this->objectTableItem.z;
 #endif
-            this->vertices.push_back(vect);
-        }
+			this->vertices.push_back(vect);
+		}
 		else this->normals.push_back(vect);
 	}
     this->facesOffset += this->footers.verticesNumber;
@@ -151,14 +165,11 @@ void mt5::parse()
     this->input.seekg(-32, ios_base::cur);
 	while(this->parseObjectFooters())
 	{
-        /*static unsigned int index = 0;
-        cout << index++ 
-            << " " << hex << this->input.tellg() << endl;*/
 		this->parseFaces();
 		this->parseVerticesAndNormals();
-        this->input.seekg((int)this->footers.endOfPreviousFooter - 32
-                , ios_base::beg);
-	    if(this->footers.endOfPreviousFooter <= 28) break;
+		this->input.seekg((int)this->footers.endOfPreviousFooter - 32
+				, ios_base::beg);
+		if(this->footers.endOfPreviousFooter <= 28) break;
 	}
 #endif
 #ifndef FOOTER_PARSING
@@ -169,6 +180,9 @@ void mt5::parse()
         this->nextObjectTableItemStart = (unsigned int)this->input.tellg();
         if(this->objectTableItem.footerStart != 0)
         {
+            this->xAngle = objectTableItem.unknown1 * 2 * M_PI / 0xffff;
+            this->yAngle = objectTableItem.unknown2 * 2 * M_PI / 0xffff;
+            this->zAngle = objectTableItem.unknown3 * 2 * M_PI / 0xffff;
             this->input.seekg((int)this->objectTableItem.footerStart,
                     ios_base::beg);
             this->parseObjectFooters();
@@ -176,10 +190,6 @@ void mt5::parse()
             this->parseVerticesAndNormals();
             this->input.seekg(this->nextObjectTableItemStart,
                     ios_base::beg);
-            /*
-            static unsigned int index = 0;
-            cout << index++ 
-                << " " << hex << this->objectTableItem.footerStart << endl;*/
         }
     }
     while(this->nextObjectTableItemStart < this->textureEntryPoint);
