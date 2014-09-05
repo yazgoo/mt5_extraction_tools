@@ -7,6 +7,7 @@ def render_to_image(path):
     bpy.data.scenes['Scene'].render.filepath = path
     bpy.ops.render.render( write_still=True ) 
 def load_mt7(path):
+    print("parsing " + path)
     f = open(path, "rb")
     f.read(4)
     f.read(4)
@@ -24,21 +25,25 @@ def load_mt7(path):
     for pos in positions:
         if not pos == 0:
             f.seek(pos)
+            print("test " + hex(f.tell()))
             position0 = [ struct.unpack('f', f.read(4))[0] for i in range(10)]
             #f.read(40 - 16)
             xb01 = struct.unpack('I', f.read(4))[0]
-            lol = [ struct.unpack('f', f.read(4))[0] for i in range(5)]
+            next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
+            if next_pos != 0 and not next_pos in positions:
+                positions.append(next_pos) # so we add it
+            lol = [ struct.unpack('f', f.read(4))[0] for i in range(4)]
             f.read(4) # should be mdcx
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
             xb01s.append([xb01, floats3[m:m+3], floats3[m+3:m+6], floats3[m+6:m+9]])
-            print("position0")
-            print(position0)
-            print("lol")
-            print(lol)
-            print("floats3")
-            print(floats3)
+#            print("position0")
+#            print(position0)
+#            print("lol")
+#            print(lol)
+#            print("floats3")
+#            print(floats3)
     print("   there are " + str(len(xb01s)) + " xb01s")
     i = 0
     for xb01, position, scale, rotation in xb01s:
@@ -55,11 +60,28 @@ def load_mt7(path):
             faces = []
             pukuk = []
             while True:
-                pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(11 * 4)])
+                # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
+                # start new
+                pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 4)])
+                f.read(4)
+                print("UGUU0 " + hex(f.tell()))
+                count = struct.unpack('I', f.read(4))[0] >> 8
+                print("UGUU0 " + str(count))
+                if (f.tell() + 4 * (count - 1)) > floats_start: break
+                f.read(4 * (count - 1))
+                print("UGUU1 " + hex(f.tell()))
+                count = struct.unpack('I', f.read(4))[0] >> 8
+                print("UGUU1 " + str(count))
+                f.read(4 * (count - 1))
+                print("UGUU2 " + hex(f.tell()))
+                count = struct.unpack('I', f.read(4))[0] >> 8
+                print("UGUU2 " + str(count))
+                f.read(4 * (count + 1))
+                # new
                 if (f.tell()) > floats_start: break
                 size = struct.unpack('I', f.read(4))[0]
-                if (f.tell() + size * 2) > floats_start: break
                 print("      size @" + hex(f.tell()) + " " + str(size))
+                if (f.tell() + size * 2) > floats_start: break
                 for k in range(size): 
                     a = struct.unpack('h', f.read(2))[0]
                     faces.append(a)
@@ -90,7 +112,6 @@ def load_mt7(path):
                         norms.append(norm)
                         verts.append(vert)
                         texture_coordinates.append(text)
-            #print(verts)
             mesh = bpy.data.meshes.new("mesh datablock name" + str(i))
             faces = [faces[x:x+3] for x in range(0, len(faces), 3)]
             mesh.from_pydata(verts, [], faces)
