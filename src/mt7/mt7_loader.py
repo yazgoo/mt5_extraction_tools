@@ -3,9 +3,78 @@ import struct
 import bpy
 import os
 import tempfile
+from mathutils import Vector
+def look_at(obj_camera, point):
+    loc_camera = obj_camera.matrix_world.to_translation()
+    direction = point - loc_camera
+    #rot_quat = direction.to_track_quat('-Z', 'Y')
+    rot_quat = direction.to_track_quat('-Z', 'Y')
+    obj_camera.rotation_euler = rot_quat.to_euler()
+def scale_objects():
+    _max = 0.0
+    for obj in bpy.data.objects:
+        if obj.name != "Camera" and obj.name != "Lamp":
+            l = [_max]
+            m1 = max(obj.dimensions)
+            if m1 > _max: _max = m1
+    maxDimension = 5.0
+    print("=========== max " + str(_max))
+    scaleFactor = maxDimension / _max
+    for obj in bpy.data.objects:
+        if obj.name != "Camera" and obj.name != "Lamp":
+            obj.scale = (scaleFactor,scaleFactor,scaleFactor)
+            obj.location = obj.location * scaleFactor
+def center_objects():
+    s = Vector((0, 0, 0))
+    locations = []
+    count = 0
+    for obj in bpy.data.objects:
+        if obj.name != "Camera" and obj.name != "Lamp":
+            s += obj.location
+            count += 1
+    print("==s==")
+    print(s)
+    center = s / count
+    print(obj.location)
+    print(center)
+    print("==a==")
+    for obj in bpy.data.objects:
+        if obj.name != "Camera" and obj.name != "Lamp":
+            obj.location -= center
+            print(obj.location)
 def render_to_image(path):
     bpy.data.scenes['Scene'].render.filepath = path
+    scale_objects()
+    center_objects()
+    look_at(bpy.data.objects["Camera"], Vector((0, 0, 0)))
     bpy.ops.render.render( write_still=True ) 
+def load_image(mesh, img_name):
+    print(img_name)
+    if not os.path.isfile(img_name): return False
+    img = bpy.data.images.load(img_name)
+    tex = bpy.data.textures.new('TexName', type = 'IMAGE')
+    tex.image = img
+    mat = bpy.data.materials.new('MatName')
+    mtex = mat.texture_slots.add()
+    mtex.texture = tex
+    mtex.texture_coords = 'UV'
+    mtex.use_map_color_diffuse = True 
+    mtex.use_map_color_emission = True 
+    mtex.emission_color_factor = 0.5
+    mtex.use_map_density = True 
+    mtex.mapping = 'FLAT' 
+    mesh.materials.append(mat)
+    return True
+def set_texture_coordinates(o, me, coords, faces):
+    uvtex = me.uv_textures.new()
+    uvtex.name = "UVMain"
+    count = 0
+    for uv_layer in me.uv_layers:
+        for x in faces:
+            for y in x:
+                print(coords[y])
+                uv_layer.data[count].uv = Vector(coords[y])
+                count += 1
 def load_mt7(path):
     print("parsing " + path)
     f = open(path, "rb")
@@ -13,15 +82,19 @@ def load_mt7(path):
     f.read(4)
     f.read(4)
     offset = struct.unpack('I', f.read(4))[0]
-    print("   offset " + str(offset))
-    f.seek(0x10 + 24 * offset)
-    count = struct.unpack('H', f.read(2))[0]
-    print("   count " + str(count))
-    f.read(2)
-    positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
-    print("   there are " + str(len(positions)) + " sections")
+    positions = []
     xb01s = []
     position0 = scale = position = None
+    if offset == 0:
+        positions = [0x10]
+    else:
+        print("   offset " + str(offset))
+        f.seek(0x10 + 24 * offset)
+        count = struct.unpack('H', f.read(2))[0]
+        print("   count " + str(count))
+        f.read(2)
+        positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
+        print("   there are " + str(len(positions)) + " sections")
     for pos in positions:
         if not pos == 0:
             f.seek(pos)
@@ -30,6 +103,10 @@ def load_mt7(path):
             #f.read(40 - 16)
             xb01 = struct.unpack('I', f.read(4))[0]
             next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
+            print("===> " + hex(xb01) + " " + hex(f.tell()))
+            if offset == 0:
+                while next_pos == 0:
+                    next_pos = struct.unpack('I', f.read(4))[0]
             if next_pos != 0 and not next_pos in positions:
                 positions.append(next_pos) # so we add it
             lol = [ struct.unpack('f', f.read(4))[0] for i in range(4)]
@@ -37,7 +114,7 @@ def load_mt7(path):
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
-            xb01s.append([xb01, floats3[m:m+3], floats3[m+3:m+6], floats3[m+6:m+9]])
+            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], floats3[m+6:m+9]])
 #            print("position0")
 #            print(position0)
 #            print("lol")
@@ -120,6 +197,8 @@ def load_mt7(path):
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
+            if load_image(mesh, path + "_PVR#01.png"):
+                set_texture_coordinates(o, mesh, texture_coordinates, faces)
             #o.scale = scale
     f.close()
 def remove_cube():
@@ -134,5 +213,5 @@ if __name__ == "__main__":
     remove_cube()
     mt7 = os.environ.get("MT7")
     load_mt7(mt7)
-    render_to_image(tempfile.gettempdir() + "/" + mt7.split("/")[-1])
+    render_to_image(tempfile.gettempdir() + "/" + mt7.replace("/", "_"))
 
