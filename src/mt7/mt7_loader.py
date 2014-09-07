@@ -73,7 +73,7 @@ def set_texture_coordinates(o, me, coords, faces):
         for x in faces:
             for y in x:
                 print(coords[y])
-                uv_layer.data[count].uv = Vector(coords[y])
+                uv_layer.data[count].uv = Vector((coords[y][0], 1 - coords[y][1]))
                 count += 1
 def load_mt7(path):
     print("parsing " + path)
@@ -145,7 +145,10 @@ def load_mt7(path):
                 count = struct.unpack('I', f.read(4))[0] >> 8
                 print("UGUU0 " + str(count))
                 if (f.tell() + 4 * (count - 1)) > floats_start: break
-                f.read(4 * (count - 1))
+                f.read(4)
+                texture = struct.unpack('I', f.read(4))[0]
+                print("texture " + hex(texture))
+                f.read(4 * (count - 2 - 1))
                 print("UGUU1 " + hex(f.tell()))
                 count = struct.unpack('I', f.read(4))[0] >> 8
                 print("UGUU1 " + str(count))
