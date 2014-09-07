@@ -26,9 +26,11 @@ Then press ``F8``
 Running as a standalone script
 ==============================
 
-You can run the script, with MT7 environment variable
+You can run the script, with MT7 and the PVR2PNG environment variable,
+    e.g:
 
-    $ export MT7=$f 
+    $ export PVR2PNG="wine ~/dev/shenmuesubs-code/Common/Binaries/pvrx2png.exe"
+    $ export MT7=~/Downloads/s2/out/model/item/001M2SLG.MT7
     $ blender --background --python ./mt7\_loader.py
 
 This will generate a snapshot.

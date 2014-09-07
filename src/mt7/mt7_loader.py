@@ -44,9 +44,14 @@ def center_objects():
             print(obj.location)
 def render_to_image(path):
     bpy.data.scenes['Scene'].render.filepath = path
+    camera = bpy.data.objects["Camera"]
     scale_objects()
     center_objects()
-    look_at(bpy.data.objects["Camera"], Vector((0, 0, 0)))
+    look_at(camera, Vector((0, 0, 0)))
+    lamp = bpy.data.objects["Lamp"]
+    lamp.location = camera.location
+    lamp.location[1] += 2
+
     bpy.ops.render.render( write_still=True ) 
 def load_image(mesh, img_name):
     print(img_name)
@@ -75,11 +80,38 @@ def set_texture_coordinates(o, me, coords, faces):
                 print(coords[y])
                 uv_layer.data[count].uv = Vector((coords[y][0], 1 - coords[y][1]))
                 count += 1
+def load_texture(f, texture_start, path):
+    f.seek(texture_start)
+    # end of file: no texture
+    if f.read(4) == '': return
+    if f.read(4) == '': return
+    count = f.read(4)
+    if count == '' or len(count) < 4: return
+    texture_count = struct.unpack('I', count)[0]
+    texture_addresses = [texture_start + struct.unpack('I', f.read(4))[0] for i in range(texture_count)]
+    i = 1
+    for texture_address in texture_addresses:
+        f.seek(texture_address)
+        f.read(16)
+        size = struct.unpack('I', f.read(4))[0] + 28
+        f.seek(texture_address)
+        pvr = path + "#%02d.pvr" % i
+        if not os.path.isfile(pvr):
+            dest = open(pvr, "wb")
+            dest.write(f.read(size))
+            dest.close()
+        png = os.path.splitext(pvr)[0] + ".png"
+        if not os.path.isfile(png):
+            os.system(os.environ.get("PVR2PNG") + " " + pvr)
+        i += 1
+
 def load_mt7(path):
     print("parsing " + path)
     f = open(path, "rb")
     f.read(4)
-    f.read(4)
+    texture_start = struct.unpack('I', f.read(4))[0]
+    load_texture(f, texture_start, path)
+    f.seek(8)
     f.read(4)
     offset = struct.unpack('I', f.read(4))[0]
     positions = []
@@ -156,7 +188,10 @@ def load_mt7(path):
                 print("UGUU2 " + hex(f.tell()))
                 count = struct.unpack('I', f.read(4))[0] >> 8
                 print("UGUU2 " + str(count))
-                f.read(4 * (count + 1))
+                f.read(4 * (count + 1 - 2))
+                next_section = struct.unpack('I', f.read(4))[0] & 0xffff
+                print("UGUU3 " + hex(next_section))
+                f.read(4)
                 # new
                 if (f.tell()) > floats_start: break
                 size = struct.unpack('I', f.read(4))[0]
@@ -200,7 +235,7 @@ def load_mt7(path):
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
-            if load_image(mesh, path + "_PVR#01.png"):
+            if load_image(mesh, path + "#01.png"):
                 set_texture_coordinates(o, mesh, texture_coordinates, faces)
             #o.scale = scale
     f.close()
