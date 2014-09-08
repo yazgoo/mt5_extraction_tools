@@ -77,7 +77,6 @@ def set_texture_coordinates(o, me, coords, faces):
     for uv_layer in me.uv_layers:
         for x in faces:
             for y in x:
-                print(coords[y])
                 uv_layer.data[count].uv = Vector((coords[y][0], 1 - coords[y][1]))
                 count += 1
 def load_texture(f, texture_start, path):
@@ -167,11 +166,15 @@ def load_mt7(path):
             print("      floats start " + hex(floats_start))
             f.read(5 * 4)
             faces = []
-            pukuk = []
             while True:
                 # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
                 # start new
-                pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 4)])
+                next_int = struct.unpack('I', f.read(4))[0]
+                print(" new " + hex(next_int) + " " + path)
+                if next_int == 0:
+                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1)]
+                else:
+                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
                 f.read(4)
                 print("UGUU0 " + hex(f.tell()))
                 count = struct.unpack('I', f.read(4))[0] >> 8
