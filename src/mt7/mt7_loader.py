@@ -166,6 +166,7 @@ def load_mt7(path):
             print("      floats start " + hex(floats_start))
             f.read(5 * 4)
             faces = []
+            texture = 0
             while True:
                 # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
                 # start new
@@ -238,7 +239,7 @@ def load_mt7(path):
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
-            if load_image(mesh, path + "#01.png"):
+            if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
                 set_texture_coordinates(o, mesh, texture_coordinates, faces)
             #o.scale = scale
     f.close()
