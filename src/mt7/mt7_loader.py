@@ -175,27 +175,36 @@ def load_mt7(path):
                 if next_int == 0:
                     [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1)]
                 else:
-                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4 + 2)]
+                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
                 f.read(4)
-                print("UGUU0 " + hex(f.tell()))
-                count = struct.unpack('I', f.read(4))[0] >> 8
-                print("UGUU0 " + str(count))
-                if (f.tell() + 4 * (count - 1)) > floats_start: break
+                while True:
+                    print("UGUU " + hex(f.tell()))
+                    count = struct.unpack('I', f.read(4))[0]
+                    if (count & 0xff) == 0x10: break
+                    count = count >> 8
+                    if (f.tell() + 4 * (count - 1)) > floats_start: break
+                    print("UGUU " + str(count))
+                    f.read(4 * (count - 1))
                 f.read(4)
-                texture = struct.unpack('I', f.read(4))[0]
-                print("texture " + hex(texture))
-                f.read(4 * (count - 2 - 1))
-                print("UGUU1 " + hex(f.tell()))
-                count = struct.unpack('I', f.read(4))[0] >> 8
-                print("UGUU1 " + str(count))
-                f.read(4 * (count - 1))
-                print("UGUU2 " + hex(f.tell()))
-                count = struct.unpack('I', f.read(4))[0] >> 8
-                print("UGUU2 " + str(count))
-                f.read(4 * (count + 1 - 2))
-                next_section = struct.unpack('I', f.read(4))[0] & 0xffff
-                print("UGUU3 " + hex(next_section))
-                f.read(4)
+#                print("UGUU0 " + hex(f.tell()))
+#                count = struct.unpack('I', f.read(4))[0] >> 8
+#                print("UGUU0 " + str(count))
+#                if (f.tell() + 4 * (count - 1)) > floats_start: break
+#                f.read(4)
+#                texture = struct.unpack('I', f.read(4))[0]
+#                print("texture " + hex(texture))
+#                f.read(4 * (count - 2 - 1))
+#                print("UGUU1 " + hex(f.tell()))
+#                count = struct.unpack('I', f.read(4))[0] >> 8
+#                print("UGUU1 " + str(count))
+#                f.read(4 * (count - 1))
+#                print("UGUU2 " + hex(f.tell()))
+#                count = struct.unpack('I', f.read(4))[0] >> 8
+#                print("UGUU2 " + str(count))
+#                f.read(4 * (count + 1 - 2))
+#                next_section = struct.unpack('I', f.read(4))[0] & 0xffff
+#                print("UGUU3 " + hex(next_section))
+#                f.read(4)
                 # new
                 if (f.tell()) > floats_start: break
                 size = struct.unpack('I', f.read(4))[0]
