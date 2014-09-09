@@ -175,7 +175,7 @@ def load_mt7(path):
                 if next_int == 0:
                     [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1)]
                 else:
-                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
+                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4 + 2)]
                 f.read(4)
                 print("UGUU0 " + hex(f.tell()))
                 count = struct.unpack('I', f.read(4))[0] >> 8
