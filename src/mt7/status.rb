@@ -15,7 +15,7 @@ def mt7s
     Dir["#{$source}/**/*.MT7"].map { |a| a.gsub('/', '_') }
 end
 def ids
-    Dir["#{$renders}/*"].map { |r| File.basename(r) }
+    Dir["#{$renders}/*"].sort_by{ |f| File.mtime(f) }.map { |r| File.basename(r) }
 end
 def score id
     fs = mt7s
@@ -88,8 +88,12 @@ get '/renders/:id' do |id|
             end
             x.tr do
                 x.td { x.a('failed list', name: 'failed') }
-                x.td score(id)[:missing].join ", "
-                x.td score(previous)[:missing].join ", "
+                x.td do
+                    x.ul { score(id)[:missing].each { |m| x.li(m) } }
+                end
+                x.td do
+                    x.ul { score(previous)[:missing].each { |m| x.li(m) } }
+                end
             end
         end
     end
