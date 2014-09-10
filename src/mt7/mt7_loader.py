@@ -192,7 +192,10 @@ def load_mt7(path):
                     count = count >> 8
                     if (f.tell() + 4 * (count - 1)) > floats_start: break
                     print("UGUU " + str(count))
-                    f.read(4 * (count - 1))
+                    if count == 0: # if we are not yet to a count zone, skip bytes
+                        f.read(4)
+                    else:
+                        f.read(4 * (count - 1))
                 f.read(4)
 #                print("UGUU0 " + hex(f.tell()))
 #                count = struct.unpack('I', f.read(4))[0] >> 8
