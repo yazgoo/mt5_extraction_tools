@@ -124,8 +124,9 @@ def load_mt7(path):
         count = struct.unpack('H', f.read(2))[0]
         print("   count " + str(count))
         f.read(2)
-        positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
-        print("   there are " + str(len(positions)) + " sections")
+        if((f.tell() + count * 4) <= first_position):
+            positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
+            print("   there are " + str(len(positions)) + " sections")
     if len(positions) == 0:
         print("using " + hex(first_position))
         positions.append(first_position)

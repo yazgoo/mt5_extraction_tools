@@ -48,7 +48,7 @@ get '/' do
                 p commit
                 x.tr do
                     x.td commit[:date]
-                    x.td { x.a r, href: "/renders/#{r}" }
+                    x.td { x.a r, href: "/renders/#{r}", class: "commit" }
                     x.td score(r)[:i]
                     x.td commit[:text]
                 end
