@@ -41,6 +41,7 @@ def describe_commit id
 end
 get '/' do
     builder(format: :html) do |x|
+        x.link rel: 'stylesheet', type: 'text/css', href: 'css/style.css'
         x.table do
             ids.each do |r|
                 commit = describe_commit r
@@ -57,6 +58,7 @@ get '/' do
 end
 get '/renders/:id' do |id|
     builder(format: :html) do |x|
+        x.link rel: 'stylesheet', type: 'text/css', href: '/css/style.css'
         x.h1 id
         x.a "..", href: "/"
         x.a "failed list", href: "#failed"
@@ -75,7 +77,14 @@ get '/renders/:id' do |id|
             x.tr do
                 n = score(id)
                 p = score(previous)
-                x.td "score (/#{n[:n]})"
+                delta = n[:i] - p[:i]
+                style = delta > 0 ? 'plus' : 'less'
+                symbol = delta > 0 ? '+' : '-'
+                x.td do 
+                    x.a "score ("
+                    x.a "#{symbol}#{delta}", class: style
+                    x.a "/#{n[:n]})"
+                end
                 x.td n[:i]
                 x.td p[:i]
             end

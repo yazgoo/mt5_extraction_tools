@@ -126,6 +126,7 @@ def load_mt7(path):
         f.read(2)
         positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
         print("   there are " + str(len(positions)) + " sections")
+    if len(positions) == 0: positions.append(0x30)
     for pos in positions:
         if not pos == 0:
             f.seek(pos)
