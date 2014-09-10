@@ -106,6 +106,7 @@ def load_texture(f, texture_start, path):
 
 def load_mt7(path):
     print("parsing " + path)
+    file_size = os.path.getsize(path)
     f = open(path, "rb")
     f.read(4)
     texture_start = struct.unpack('I', f.read(4))[0]
@@ -130,9 +131,11 @@ def load_mt7(path):
     if len(positions) == 0:
         print("using " + hex(first_position))
         positions.append(first_position)
+    print([hex(p) for p in positions])
     for pos in positions:
         if not pos == 0:
             f.seek(pos)
+            if pos + 10 > file_size: break
             print("test " + hex(f.tell()))
             position0 = [ struct.unpack('f', f.read(4))[0] for i in range(10)]
             #f.read(40 - 16)
@@ -164,6 +167,7 @@ def load_mt7(path):
             i += 1
             f.seek(xb01)
             print("   xb01 " + str(i) + " @" + hex(f.tell()))
+            if xb01 + 7 * 4 > file_size: break
             f.read(4) # should be xb01
             float2 = [struct.unpack('f', f.read(4))[0] for i in range(6)]
             floats_start = f.tell() + struct.unpack('I', f.read(4))[0] * 4

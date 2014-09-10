@@ -41,6 +41,7 @@ def describe_commit id
 end
 get '/' do
     builder(format: :html) do |x|
+        x.h1 "Renders"
         x.link rel: 'stylesheet', type: 'text/css', href: 'css/style.css'
         x.table do
             ids.each do |r|
