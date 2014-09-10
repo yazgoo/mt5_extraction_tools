@@ -111,7 +111,7 @@ def load_mt7(path):
     texture_start = struct.unpack('I', f.read(4))[0]
     load_texture(f, texture_start, path)
     f.seek(8)
-    f.read(4)
+    first_position = struct.unpack('I', f.read(4))[0]
     offset = struct.unpack('I', f.read(4))[0]
     positions = []
     xb01s = []
@@ -126,7 +126,9 @@ def load_mt7(path):
         f.read(2)
         positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
         print("   there are " + str(len(positions)) + " sections")
-    if len(positions) == 0: positions.append(0x30)
+    if len(positions) == 0:
+        print("using " + hex(first_position))
+        positions.append(first_position)
     for pos in positions:
         if not pos == 0:
             f.seek(pos)
