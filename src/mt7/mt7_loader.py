@@ -116,17 +116,17 @@ def load_mt7(path):
     positions = []
     xb01s = []
     position0 = scale = position = None
-    if offset == 0:
-        positions = [0x10]
-    else:
-        print("   offset " + str(offset))
-        f.seek(0x10 + 24 * offset)
-        count = struct.unpack('H', f.read(2))[0]
-        print("   count " + str(count))
-        f.read(2)
-        if((f.tell() + count * 4) <= first_position):
-            positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
-            print("   there are " + str(len(positions)) + " sections")
+#    if offset == 0:
+#        positions = [0x10]
+#    else:
+    print("   offset " + str(offset))
+    f.seek(0x10 + 24 * offset)
+    count = struct.unpack('H', f.read(2))[0]
+    print("   count " + str(count))
+    f.read(2)
+    if((f.tell() + count * 4) <= first_position):
+        positions = [struct.unpack('I', f.read(4))[0] for i in range(count)]
+        print("   there are " + str(len(positions)) + " sections")
     if len(positions) == 0:
         print("using " + hex(first_position))
         positions.append(first_position)
