@@ -202,7 +202,7 @@ def load_mt7(path):
                             texture = struct.unpack('I', f.read(4))[0]
                             textures[len(faces)] = texture
                             print("texture @" + hex(f.tell() - 4) + " " + str(texture))
-                        f.read(4 * (count - 1))
+                        if count > 1: f.read(4 * (count - 1))
                         _i += 1
                 f.read(4)
 #                print("UGUU0 " + hex(f.tell()))
