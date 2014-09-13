@@ -265,17 +265,19 @@ def load_mt7(path):
             print(textures)
             faces_starts = sorted(list(textures.keys()))
             for k in range(len(faces_starts)):
-                mesh = bpy.data.meshes.new("mesh datablock name" + str(i))
                 faces_start = faces_starts[k]
-                faces_size = len(faces)
-                if (k + 1) < len(faces_starts): faces_size = faces_starts[k+1] - faces_start
+                faces_count = int(len(faces) / 3) * 3
+                if (k + 1) < len(faces_starts): faces_count = faces_starts[k+1] - faces_start
                 texture = textures[faces_start]
-                actual_faces = [faces[x:x+3] for x in range(faces_start, faces_size, 3)]
+                print(faces)
+                actual_faces = [faces[x:x+3] for x in range(faces_start, faces_count, 3)]
+                print(actual_faces)
                 print(len(actual_faces))
                 print(len(verts))
+                mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
                 mesh.from_pydata(verts, [], actual_faces)
                 mesh.update()
-                o = bpy.data.objects.new("object" + str(i), mesh)
+                o = bpy.data.objects.new("object_" + str(i) + "_" + str(k), mesh)
                 o.data = mesh 
                 bpy.context.scene.objects.link(o)
                 o.location = position
