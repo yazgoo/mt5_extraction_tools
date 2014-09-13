@@ -174,7 +174,7 @@ def load_mt7(path):
             print("      floats start " + hex(floats_start))
             f.read(5 * 4)
             faces = []
-            texture = 0
+            textures = {}
             while True:
                 # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
                 # start new
@@ -185,6 +185,7 @@ def load_mt7(path):
                 else:
                     [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
                 f.read(4)
+                _i = 0
                 while True:
                     print("UGUU " + hex(f.tell()))
                     count = struct.unpack('I', f.read(4))[0]
@@ -195,7 +196,14 @@ def load_mt7(path):
                     if count == 0: # if we are not yet to a count zone, skip bytes
                         f.read(4)
                     else:
+                        if _i == 0: # we are at the start of the, section, we should find the texture number here
+                            count -= 2
+                            f.read(4)
+                            texture = struct.unpack('I', f.read(4))[0]
+                            textures[len(faces)] = texture
+                            print("texture @" + hex(f.tell() - 4) + " " + str(texture))
                         f.read(4 * (count - 1))
+                        _i += 1
                 f.read(4)
 #                print("UGUU0 " + hex(f.tell()))
 #                count = struct.unpack('I', f.read(4))[0] >> 8
@@ -218,6 +226,9 @@ def load_mt7(path):
 #                f.read(4)
                 # new
                 if (f.tell()) > floats_start: break
+                s = 13
+                f.seek(-4 * s, 1)
+                print("before @" + hex(f.tell()) + " "+ str([struct.unpack('I', f.read(4))[0] for i in range(s)]))
                 size = struct.unpack('I', f.read(4))[0]
                 print("      size @" + hex(f.tell()) + " " + str(size))
                 if (f.tell() + size * 2) > floats_start: break
@@ -251,17 +262,26 @@ def load_mt7(path):
                         norms.append(norm)
                         verts.append(vert)
                         texture_coordinates.append(text)
-            mesh = bpy.data.meshes.new("mesh datablock name" + str(i))
-            faces = [faces[x:x+3] for x in range(0, len(faces), 3)]
-            mesh.from_pydata(verts, [], faces)
-            mesh.update()
-            o = bpy.data.objects.new("object" + str(i), mesh)
-            o.data = mesh 
-            bpy.context.scene.objects.link(o)
-            o.location = position
-            if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
-                set_texture_coordinates(o, mesh, texture_coordinates, faces)
-            #o.scale = scale
+            print(textures)
+            faces_starts = sorted(list(textures.keys()))
+            for k in range(len(faces_starts)):
+                mesh = bpy.data.meshes.new("mesh datablock name" + str(i))
+                faces_start = faces_starts[k]
+                faces_size = len(faces)
+                if (k + 1) < len(faces_starts): faces_size = faces_starts[k+1] - faces_start
+                texture = textures[faces_start]
+                actual_faces = [faces[x:x+3] for x in range(faces_start, faces_size, 3)]
+                print(len(actual_faces))
+                print(len(verts))
+                mesh.from_pydata(verts, [], actual_faces)
+                mesh.update()
+                o = bpy.data.objects.new("object" + str(i), mesh)
+                o.data = mesh 
+                bpy.context.scene.objects.link(o)
+                o.location = position
+                if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
+                    set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
+                #o.scale = scale
     f.close()
 def remove_cube():
     scene = bpy.context.scene
