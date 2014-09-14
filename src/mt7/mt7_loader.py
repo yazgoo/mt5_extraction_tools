@@ -145,13 +145,16 @@ def extract_faces(f, path, floats_start, textures, faces):
         counter = struct.unpack('I', f.read(4))[0]
         _type = counter & 0xff
         _next_count = counter >> 8
-        if _next_count == 0: return
         delta = 4 * (_next_count - 1)
         _next = f.tell() + delta
-        print("UGUU42 " + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
-        if _type == 0x10:
+        print("UGUU42 @" + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
+        if _type == 0:
+            f.read(5 * 4)
+        elif _type == 0x10:
+            print("UGUU42 faces");
             f.read(4)
             extract_faces_simple(f, faces, floats_start)
+            print("UGUU42 faces done @" + hex(f.tell()));
         elif _type == 0xb:
             f.read(4)
             textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
