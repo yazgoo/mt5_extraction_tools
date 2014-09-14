@@ -151,8 +151,11 @@ def extract_faces(f, path, floats_start, textures, faces):
         print("UGUU42 " + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
         if _type == 0x10:
             f.read(4)
-            textures[len(faces)] = 0 
             extract_faces_simple(f, faces, floats_start)
+        elif _type == 0xb:
+            f.read(4)
+            textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
+            f.read(delta - 8)
         else:
             current = f.read(delta)
 def extract_faces2(f, path, floats_start, textures, faces):
