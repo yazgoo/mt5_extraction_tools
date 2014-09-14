@@ -15,7 +15,7 @@ def mt7s
     Dir["#{$source}/**/*.MT7"].map { |a| a.gsub('/', '_') }
 end
 def ids
-    Dir["#{$renders}/*"].sort_by{ |f| File.mtime(f) }.map { |r| File.basename(r) }
+    Dir["#{$renders}/*"].sort_by{ |f| -File.mtime(f).to_i }.map { |r| File.basename(r) }
 end
 def score id
     fs = mt7s
@@ -44,14 +44,17 @@ get '/' do
         x.h1 "Renders"
         x.link rel: 'stylesheet', type: 'text/css', href: 'css/style.css'
         x.table do
-            ids.each do |r|
+            _ids = ids
+            min = _ids.collect { |r| score(r)[:i] }.min
+            _ids.each do |r|
                 commit = describe_commit r
                 p commit
                 x.tr do
-                    x.td commit[:date]
                     x.td { x.a r, href: "/renders/#{r}", class: "commit" }
-                    x.td score(r)[:i]
                     x.td commit[:text]
+                    x.td commit[:date]
+                    x.td { x.div style: "width:#{((score(r)[:i] - min)/5)}px;", 
+                           class: 'count' }
                 end
             end
         end

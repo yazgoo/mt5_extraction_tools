@@ -104,6 +104,204 @@ def load_texture(f, texture_start, path):
             os.system(os.environ.get("PVR2PNG") + " " + pvr)
         i += 1
 
+def get_xb01s(f, positions, xb01s, file_size, offset):
+    for pos in positions:
+        if not pos == 0:
+            f.seek(pos)
+            if pos + 10 > file_size: break
+            print("test " + hex(f.tell()))
+            position0 = [ struct.unpack('f', f.read(4))[0] for i in range(10)]
+            #f.read(40 - 16)
+            xb01 = struct.unpack('I', f.read(4))[0]
+            next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
+            print("===> " + hex(xb01) + " " + hex(f.tell()))
+            if offset == 0:
+                while next_pos == 0:
+                    next_pos = struct.unpack('I', f.read(4))[0]
+            if next_pos != 0 and not next_pos in positions:
+                positions.append(next_pos) # so we add it
+            lol = [ struct.unpack('f', f.read(4))[0] for i in range(4)]
+            f.read(4) # should be mdcx
+            floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
+            m = 0
+            # xb01 position scale rotation
+            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], floats3[m+6:m+9]])
+#            print("position0")
+#            print(position0)
+#            print("lol")
+#            print(lol)
+#            print("floats3")
+#            print(floats3)
+def extract_faces_simple(f, faces, floats_start):
+    size = struct.unpack('I', f.read(4))[0]
+    print("      size @" + hex(f.tell()) + " " + str(size))
+    for k in range(size): 
+        a = struct.unpack('h', f.read(2))[0]
+        faces.append(a)
+def extract_faces(f, path, floats_start, textures, faces):
+    f.read(6 * 4)
+    while True:
+        if (f.tell()) > floats_start: return
+        counter = struct.unpack('I', f.read(4))[0]
+        _type = counter & 0xff
+        _next_count = counter >> 8
+        if _next_count == 0: return
+        delta = 4 * (_next_count - 1)
+        _next = f.tell() + delta
+        print("UGUU42 " + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
+        if _type == 0x10:
+            f.read(4)
+            textures[len(faces)] = 0 
+            extract_faces_simple(f, faces, floats_start)
+        else:
+            current = f.read(delta)
+def extract_faces2(f, path, floats_start, textures, faces):
+    f.read(4 * 13)
+    while True:
+        print("UGUU42 " + hex(f.tell()));
+        [struct.unpack('f', f.read(4))[0] for i in range(14)]
+        print("UGUU42 " + hex(f.tell()));
+        f.read(4 * 4)
+        textures[len(faces)] = struct.unpack('I', f.read(4))[0]
+        f.read(4 * 9)
+        print("UGUU42 " + hex(f.tell()));
+        _next_count = struct.unpack('I', f.read(4))[0] >> 8 - 1
+        _next = f.tell() + 4 * (_next_count)
+        print("UGUU42 next_count " + str(_next_count) + "\tnext " + hex(_next) + " @" + hex(f.tell()));
+        f.read(4)
+        size = struct.unpack('I', f.read(4))[0]
+        print("      size @" + hex(f.tell()) + " " + str(size))
+        if (f.tell() + size * 2) > floats_start: break
+        for k in range(size): 
+            a = struct.unpack('h', f.read(2))[0]
+            faces.append(a)
+        f.seek(_next)
+        if _next_count == 0: return
+def extract_faces2(f, path, floats_start, textures, faces):
+    f.read(4 * 13)
+    while True:
+        print("UGUU42 " + hex(f.tell()));
+        [struct.unpack('f', f.read(4))[0] for i in range(14)]
+        print("UGUU42 " + hex(f.tell()));
+        f.read(4 * 4)
+        textures[len(faces)] = struct.unpack('I', f.read(4))[0]
+        f.read(4 * 9)
+        print("UGUU42 " + hex(f.tell()));
+        _next_count = struct.unpack('I', f.read(4))[0] >> 8 - 1
+        _next = f.tell() + 4 * (_next_count)
+        print("UGUU42 next_count " + str(_next_count) + "\tnext " + hex(_next) + " @" + hex(f.tell()));
+        f.read(4)
+        size = struct.unpack('I', f.read(4))[0]
+        print("      size @" + hex(f.tell()) + " " + str(size))
+        if (f.tell() + size * 2) > floats_start: break
+        for k in range(size): 
+            a = struct.unpack('h', f.read(2))[0]
+            faces.append(a)
+        f.seek(_next)
+        if _next_count == 0: return
+def extract_faces_verbose(f, path, floats_start, textures, faces):
+        print("UGUU42 " + hex(f.tell()));
+        while True:
+            # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
+            # start new
+            next_int = struct.unpack('I', f.read(4))[0]
+            print(" new " + hex(next_int) + " " + path)
+            if next_int == 0:
+                [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1)]
+            else:
+                [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
+            f.read(4)
+            _i = 0
+            while True:
+                print("UGUU " + hex(f.tell()))
+                count = struct.unpack('I', f.read(4))[0]
+                if (count & 0xff) == 0x10: break
+                count = count >> 8
+                if (f.tell() + 4 * (count - 1)) > floats_start: break
+                print("UGUU " + str(count))
+                if count == 0: # if we are not yet to a count zone, skip bytes
+                    f.read(4)
+                else:
+                    if _i == 0: # we are at the start of the, section, we should find the texture number here
+                        count -= 2
+                        f.read(4)
+                        texture = struct.unpack('I', f.read(4))[0]
+                        textures[len(faces)] = texture
+                        print("texture @" + hex(f.tell() - 4) + " " + str(texture))
+                    if count > 1: f.read(4 * (count - 1))
+                    _i += 1
+            f.read(4)
+            if (f.tell()) > floats_start: break
+            s = 13
+            f.seek(-4 * s, 1)
+            print("before @" + hex(f.tell()) + " "+ str([struct.unpack('I', f.read(4))[0] for i in range(s)]))
+            size = struct.unpack('I', f.read(4))[0]
+            print("      size @" + hex(f.tell()) + " " + str(size))
+            if (f.tell() + size * 2) > floats_start: break
+            for k in range(size): 
+                a = struct.unpack('h', f.read(2))[0]
+                faces.append(a)
+def load_xb01(f, xb01, i, file_size, path, position):
+        f.seek(xb01)
+        print("   xb01 " + str(i) + " @" + hex(f.tell()))
+        if xb01 + 7 * 4 > file_size: return
+        f.read(4) # should be xb01
+        float2 = [struct.unpack('f', f.read(4))[0] for i in range(6)]
+        floats_start = f.tell() + struct.unpack('I', f.read(4))[0] * 4
+        print("      floats start " + hex(floats_start))
+        f.read(5 * 4)
+        faces = []
+        textures = {}
+        extract_faces(f, path, floats_start, textures, faces)
+        f.seek(floats_start)
+        floats_n = struct.unpack('I', f.read(4))[0] >> 8
+        floats_n -= 4
+        f.read(3 * 4)
+        print("      floats @" + hex(f.tell()) + "? " + str(floats_n))
+        verts = []
+        norms = []
+        texture_coordinates = []
+        vert = []
+        norm = []
+        text = []
+        for j in range(floats_n):
+            _f = struct.unpack('f', f.read(4))[0]
+            if j % 8 == 0:
+                norm = []
+                vert = []
+                text = []
+            if j % 8 < 3:
+                vert.append(_f)
+            elif j % 8 < 6:
+                norm.append(_f)
+            else:
+                text.append(_f)
+                if j % 8 == 7:
+                    norms.append(norm)
+                    verts.append(vert)
+                    texture_coordinates.append(text)
+        print(textures)
+        faces_starts = sorted(list(textures.keys()))
+        for k in range(len(faces_starts)):
+            faces_start = faces_starts[k]
+            faces_count = int(len(faces) / 3) * 3
+            if (k + 1) < len(faces_starts): faces_count = faces_starts[k+1] - faces_start
+            texture = textures[faces_start]
+            print(faces)
+            actual_faces = [faces[x:x+3] for x in range(faces_start, faces_count, 3)]
+            print(actual_faces)
+            print(len(actual_faces))
+            print(len(verts))
+            mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
+            mesh.from_pydata(verts, [], actual_faces)
+            mesh.update()
+            o = bpy.data.objects.new("object_" + str(i) + "_" + str(k), mesh)
+            o.data = mesh 
+            bpy.context.scene.objects.link(o)
+            o.location = position
+            if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
+                set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
+            #o.scale = scale
 def load_mt7(path):
     print("parsing " + path)
     file_size = os.path.getsize(path)
@@ -132,158 +330,14 @@ def load_mt7(path):
         print("using " + hex(first_position))
         positions.append(first_position)
     print([hex(p) for p in positions])
-    for pos in positions:
-        if not pos == 0:
-            f.seek(pos)
-            if pos + 10 > file_size: break
-            print("test " + hex(f.tell()))
-            position0 = [ struct.unpack('f', f.read(4))[0] for i in range(10)]
-            #f.read(40 - 16)
-            xb01 = struct.unpack('I', f.read(4))[0]
-            next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
-            print("===> " + hex(xb01) + " " + hex(f.tell()))
-            if offset == 0:
-                while next_pos == 0:
-                    next_pos = struct.unpack('I', f.read(4))[0]
-            if next_pos != 0 and not next_pos in positions:
-                positions.append(next_pos) # so we add it
-            lol = [ struct.unpack('f', f.read(4))[0] for i in range(4)]
-            f.read(4) # should be mdcx
-            floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
-            m = 0
-            # xb01 position scale rotation
-            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], floats3[m+6:m+9]])
-#            print("position0")
-#            print(position0)
-#            print("lol")
-#            print(lol)
-#            print("floats3")
-#            print(floats3)
+    get_xb01s(f, positions, xb01s, file_size, offset)
     print("   there are " + str(len(xb01s)) + " xb01s")
     i = 0
     for xb01, position, scale, rotation in xb01s:
         float2 = float4 = []
         if not xb01 == 0:
             i += 1
-            f.seek(xb01)
-            print("   xb01 " + str(i) + " @" + hex(f.tell()))
-            if xb01 + 7 * 4 > file_size: break
-            f.read(4) # should be xb01
-            float2 = [struct.unpack('f', f.read(4))[0] for i in range(6)]
-            floats_start = f.tell() + struct.unpack('I', f.read(4))[0] * 4
-            print("      floats start " + hex(floats_start))
-            f.read(5 * 4)
-            faces = []
-            textures = {}
-            while True:
-                # originaly pukuk.append([struct.unpack('f', f.read(4))[0] for i in range(7 * 11)])
-                # start new
-                next_int = struct.unpack('I', f.read(4))[0]
-                print(" new " + hex(next_int) + " " + path)
-                if next_int == 0:
-                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1)]
-                else:
-                    [struct.unpack('f', f.read(4))[0] for i in range(7 * 4 - 1 - 3 * 4)]
-                f.read(4)
-                _i = 0
-                while True:
-                    print("UGUU " + hex(f.tell()))
-                    count = struct.unpack('I', f.read(4))[0]
-                    if (count & 0xff) == 0x10: break
-                    count = count >> 8
-                    if (f.tell() + 4 * (count - 1)) > floats_start: break
-                    print("UGUU " + str(count))
-                    if count == 0: # if we are not yet to a count zone, skip bytes
-                        f.read(4)
-                    else:
-                        if _i == 0: # we are at the start of the, section, we should find the texture number here
-                            count -= 2
-                            f.read(4)
-                            texture = struct.unpack('I', f.read(4))[0]
-                            textures[len(faces)] = texture
-                            print("texture @" + hex(f.tell() - 4) + " " + str(texture))
-                        if count > 1: f.read(4 * (count - 1))
-                        _i += 1
-                f.read(4)
-#                print("UGUU0 " + hex(f.tell()))
-#                count = struct.unpack('I', f.read(4))[0] >> 8
-#                print("UGUU0 " + str(count))
-#                if (f.tell() + 4 * (count - 1)) > floats_start: break
-#                f.read(4)
-#                texture = struct.unpack('I', f.read(4))[0]
-#                print("texture " + hex(texture))
-#                f.read(4 * (count - 2 - 1))
-#                print("UGUU1 " + hex(f.tell()))
-#                count = struct.unpack('I', f.read(4))[0] >> 8
-#                print("UGUU1 " + str(count))
-#                f.read(4 * (count - 1))
-#                print("UGUU2 " + hex(f.tell()))
-#                count = struct.unpack('I', f.read(4))[0] >> 8
-#                print("UGUU2 " + str(count))
-#                f.read(4 * (count + 1 - 2))
-#                next_section = struct.unpack('I', f.read(4))[0] & 0xffff
-#                print("UGUU3 " + hex(next_section))
-#                f.read(4)
-                # new
-                if (f.tell()) > floats_start: break
-                s = 13
-                f.seek(-4 * s, 1)
-                print("before @" + hex(f.tell()) + " "+ str([struct.unpack('I', f.read(4))[0] for i in range(s)]))
-                size = struct.unpack('I', f.read(4))[0]
-                print("      size @" + hex(f.tell()) + " " + str(size))
-                if (f.tell() + size * 2) > floats_start: break
-                for k in range(size): 
-                    a = struct.unpack('h', f.read(2))[0]
-                    faces.append(a)
-            f.seek(floats_start)
-            floats_n = struct.unpack('I', f.read(4))[0] >> 8
-            floats_n -= 4
-            f.read(3 * 4)
-            print("      floats @" + hex(f.tell()) + "? " + str(floats_n))
-            verts = []
-            norms = []
-            texture_coordinates = []
-            vert = []
-            norm = []
-            text = []
-            for j in range(floats_n):
-                _f = struct.unpack('f', f.read(4))[0]
-                if j % 8 == 0:
-                    norm = []
-                    vert = []
-                    text = []
-                if j % 8 < 3:
-                    vert.append(_f)
-                elif j % 8 < 6:
-                    norm.append(_f)
-                else:
-                    text.append(_f)
-                    if j % 8 == 7:
-                        norms.append(norm)
-                        verts.append(vert)
-                        texture_coordinates.append(text)
-            print(textures)
-            faces_starts = sorted(list(textures.keys()))
-            for k in range(len(faces_starts)):
-                faces_start = faces_starts[k]
-                faces_count = int(len(faces) / 3) * 3
-                if (k + 1) < len(faces_starts): faces_count = faces_starts[k+1] - faces_start
-                texture = textures[faces_start]
-                print(faces)
-                actual_faces = [faces[x:x+3] for x in range(faces_start, faces_count, 3)]
-                print(actual_faces)
-                print(len(actual_faces))
-                print(len(verts))
-                mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
-                mesh.from_pydata(verts, [], actual_faces)
-                mesh.update()
-                o = bpy.data.objects.new("object_" + str(i) + "_" + str(k), mesh)
-                o.data = mesh 
-                bpy.context.scene.objects.link(o)
-                o.location = position
-                if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
-                    set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
-                #o.scale = scale
+            load_xb01(f, xb01, i, file_size, path, position)
     f.close()
 def remove_cube():
     scene = bpy.context.scene
