@@ -31,8 +31,9 @@ def score id
     {i: i, n: fs.size, missing: missing}
 end
 def get_previous id
-    i = ids.index id
-    ids[(i == 0 or i == nil) ? 0 : i - 1]
+    _ids = ids.reverse
+    i = _ids.index id
+    _ids[(i == 0 or i == nil) ? 0 : i - 1]
 end
 def describe_commit id
     Hash[{date: :cd, epoch: :ct, text: :B}.map do |x, y|

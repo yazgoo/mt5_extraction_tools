@@ -147,14 +147,14 @@ def extract_faces(f, path, floats_start, textures, faces):
         _next_count = counter >> 8
         delta = 4 * (_next_count - 1)
         _next = f.tell() + delta
-        print("UGUU42 @" + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
         if _type == 0:
             f.read(5 * 4)
         elif _type == 0x10:
-            print("UGUU42 faces");
+            print("UGUU42 @" + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
             f.read(4)
             extract_faces_simple(f, faces, floats_start)
             print("UGUU42 faces done @" + hex(f.tell()));
+            f.seek(_next)
         elif _type == 0xb:
             f.read(4)
             textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
@@ -286,18 +286,16 @@ def load_xb01(f, xb01, i, file_size, path, position):
                     norms.append(norm)
                     verts.append(vert)
                     texture_coordinates.append(text)
-        print(textures)
         faces_starts = sorted(list(textures.keys()))
+        print("faces", faces, len(faces))
+        print("textures", textures, faces_starts)
         for k in range(len(faces_starts)):
             faces_start = faces_starts[k]
-            faces_count = int(len(faces) / 3) * 3
-            if (k + 1) < len(faces_starts): faces_count = faces_starts[k+1] - faces_start
+            faces_end = int(len(faces) / 3) * 3
+            if (k + 1) < len(faces_starts): faces_end = faces_starts[k+1]
             texture = textures[faces_start]
-            print(faces)
-            actual_faces = [faces[x:x+3] for x in range(faces_start, faces_count, 3)]
-            print(actual_faces)
-            print(len(actual_faces))
-            print(len(verts))
+            actual_faces = [faces[x:x+3] for x in range(faces_start, faces_end, 3)]
+            print("actual faces", actual_faces, len(actual_faces), faces_start, faces_end)
             mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
             mesh.from_pydata(verts, [], actual_faces)
             mesh.update()
