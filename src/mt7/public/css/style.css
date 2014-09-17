@@ -1,0 +1,44 @@
+*
+{
+    font-family: 'Nimbus Sans L';
+}
+table
+{
+    border-collapse: collapse;
+    border: 1px solid #EEE;
+    border-bottom: 0;
+}
+tr:hover
+{
+    background-color: #f7fbfc;
+}
+td
+{
+    padding: 8px 10px;
+    border-bottom: 1px solid #EEE;
+}
+.plus
+{
+    color: green;
+}
+.less
+{
+    color: red;
+}
+.commit
+{
+    font-size: 10px;
+    color: blue;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 2px;
+    background-color: white;
+    padding: 3px;
+    border: 1px solid #EEE;
+    font-family: Consolas,"Liberation Mono",Menlo,Courier,monospace;
+}
+.count
+{
+    background-color: green;
+    height: 20px;
+}

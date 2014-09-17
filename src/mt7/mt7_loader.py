@@ -155,6 +155,9 @@ def extract_faces(f, path, floats_start, textures, faces):
             extract_faces_simple(f, faces, floats_start)
             print("UGUU42 faces done @" + hex(f.tell()));
             f.seek(_next)
+        elif _type == 0x4:
+            # TODO find out what these floats are for
+            print([struct.unpack('f', f.read(4))[0] for i in range(_next_count - 1)])
         elif _type == 0xb:
             f.read(4)
             textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
@@ -287,7 +290,6 @@ def load_xb01(f, xb01, i, file_size, path, position):
                     verts.append(vert)
                     texture_coordinates.append(text)
         faces_starts = sorted(list(textures.keys()))
-        print("faces", faces, len(faces))
         print("textures", textures, faces_starts)
         for k in range(len(faces_starts)):
             faces_start = faces_starts[k]
@@ -295,7 +297,6 @@ def load_xb01(f, xb01, i, file_size, path, position):
             if (k + 1) < len(faces_starts): faces_end = faces_starts[k+1]
             texture = textures[faces_start]
             actual_faces = [faces[x:x+3] for x in range(faces_start, faces_end, 3)]
-            print("actual faces", actual_faces, len(actual_faces), faces_start, faces_end)
             mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
             mesh.from_pydata(verts, [], actual_faces)
             mesh.update()
