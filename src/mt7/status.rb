@@ -12,7 +12,7 @@ def png commit, id
     "#{$renders}/#{commit}/#{id}.png"
 end
 def mt7s
-    Dir["#{$source}/**/*.MT7"].map { |a| a.gsub('/', '_') }
+    Dir["#{$source}/**/*.MT7"].map { |a| a.gsub('/', '_').gsub("#", "-sharp-") }
 end
 def ids
     Dir["#{$renders}/*"].sort_by{ |f| -File.mtime(f).to_i }.map { |r| File.basename(r) }
@@ -22,7 +22,7 @@ def score id
     i = 0
     missing = []
     fs.each do |f|
-        if File.exist? png(id, f)
+        if File.exist? png(id, f).gsub('-sharp-', '#')
             i += 1 
         else
             missing << cleanup_path(f)
@@ -113,6 +113,6 @@ get '/renders/:id' do |id|
     end
 end
 get '/render/:commit/:id' do |commit, id|
-    png = png(commit, id)
+    png = png(commit, id.gsub("-sharp-", "#"))
     File.open(png) { |f| f.read } if File.exist? png
 end
