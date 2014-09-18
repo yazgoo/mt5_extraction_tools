@@ -16,7 +16,7 @@ def extract_pks(path):
         f = gzip_to_io(path)
     f.seek(0)
     PAKS = f.read(4)
-    if PAKS != 'PAKS':
+    if PAKS != ("PAK" + path[-1]):
         f.close()
         print "PAKS missing"
         return 
@@ -32,6 +32,7 @@ def extract_pks(path):
     print("there are " + str(number_of_inner_sections) + " sections")
     f.seek(-number_of_inner_sections * 20, 2)
     for i in range(number_of_inner_sections):
+        f.seek(-number_of_inner_sections * 20 + i * 20, 2)
         character_id = f.read(4)
         unknown = struct.unpack('I', f.read(4))[0]
         section_type = f.read(4)
@@ -40,16 +41,19 @@ def extract_pks(path):
         if section_type == 'CHRM':
             f.seek(section_offset + 16)
             output_path = (path + "#%02d.MT7")  % k
-            print("generating " + output_path)
-            output = open(output_path, "wb")
-            output.write(f.read(section_size))
-            output.close()
+            if not os.path.isfile(output_path):
+                print("generating " + output_path)
+                output = open(output_path, "wb")
+                output.write(f.read(section_size))
+                output.close()
+            else:
+                print(output_path + " already exists")
             k += 1
         print("character id " + character_id, 
                 "unknown flag " + hex(unknown),
                 "section type " + section_type,
-                "section size " + str(section_size),
-                "section_offset " + str(section_offset))
+                "section size " + hex(section_size),
+                "section_offset " + hex(section_offset))
     f.close()
 if __name__ == "__main__":
     for path in sys.argv[1:]:
