@@ -7,6 +7,17 @@ def gzip_to_io(path):
     output.write(f.read())
     f.close()
     return output
+def extract_chrm(f, path, k):
+    output_path = (path + "#%02d.MT7")  % k
+    if not os.path.isfile(output_path):
+        print("generating " + output_path)
+        output = open(output_path, "wb")
+        output.write(f.read(section_size))
+        output.close()
+    else:
+        print(output_path + " already exists")
+    k += 1
+    return k
 def extract_pks(path):
     k = 1
     path = sys.argv[1]
@@ -28,6 +39,7 @@ def extract_pks(path):
         print "IPAC missing"
         return 
     ipacs_section_size = struct.unpack('I', f.read(4))[0]
+    print("the IPAC section size is " + hex(ipacs_section_size))
     number_of_inner_sections = struct.unpack('I', f.read(4))[0]
     print("there are " + str(number_of_inner_sections) + " sections")
     f.seek(-number_of_inner_sections * 20, 2)
@@ -38,17 +50,10 @@ def extract_pks(path):
         section_type = f.read(4)
         section_offset = struct.unpack('I', f.read(4))[0]
         section_size = struct.unpack('I', f.read(4))[0]
+        f.seek(section_offset + 16)
         if section_type == 'CHRM':
-            f.seek(section_offset + 16)
-            output_path = (path + "#%02d.MT7")  % k
-            if not os.path.isfile(output_path):
-                print("generating " + output_path)
-                output = open(output_path, "wb")
-                output.write(f.read(section_size))
-                output.close()
-            else:
-                print(output_path + " already exists")
-            k += 1
+            k = extract_chrm(f, path, k)
+        elif section_type == 'CHRT':
         print("character id " + character_id, 
                 "unknown flag " + hex(unknown),
                 "section type " + section_type,
