@@ -116,11 +116,12 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             xb01 = struct.unpack('I', f.read(4))[0]
             next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
             print("===> " + hex(xb01) + " " + hex(f.tell()))
-            if offset == 0:
-                while next_pos == 0:
-                    next_pos = struct.unpack('I', f.read(4))[0]
+            #if offset == 0:
+            while next_pos == 0:
+                next_pos = struct.unpack('I', f.read(4))[0]
             if next_pos != 0 and not next_pos in positions:
                 positions.append(next_pos) # so we add it
+            print("next_pos" , next_pos, "offset", offset)
             lol = [ struct.unpack('f', f.read(4))[0] for i in range(4)]
             f.read(4) # should be mdcx
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
@@ -162,6 +163,7 @@ def extract_faces(f, path, floats_start, textures, faces):
         elif _type == 0xb:
             f.read(4)
             textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
+            print("texture ", textures[len(faces)])
             f.read(delta - 8)
         else:
             current = f.read(delta)
@@ -307,6 +309,7 @@ def load_xb01(f, xb01, i, file_size, path, position):
             o.location = position
             texture_name = (path + "#%02d.png") % (texture + 1)
             texture_name = re.sub(r"PKS....MT7", "PKF", texture_name)
+            texture_name = re.sub(r"MAPS.MT7", "MPK00.PKF", texture_name)
             print("texture", texture_name)
             if load_image(mesh, texture_name):
                 set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
