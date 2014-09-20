@@ -7,7 +7,7 @@ def gzip_to_io(path):
     output.write(f.read())
     f.close()
     return output
-def extract_chrm(f, path, k):
+def extract_chrm(f, path, k, section_size):
     output_path = (path + "#%02d.MT7")  % k
     if not os.path.isfile(output_path):
         print("generating " + output_path)
@@ -50,15 +50,14 @@ def extract_pks(path):
         section_type = f.read(4)
         section_offset = struct.unpack('I', f.read(4))[0]
         section_size = struct.unpack('I', f.read(4))[0]
-        f.seek(section_offset + 16)
-        if section_type == 'CHRM':
-            k = extract_chrm(f, path, k)
-        elif section_type == 'CHRT':
         print("character id " + character_id, 
                 "unknown flag " + hex(unknown),
                 "section type " + section_type,
                 "section size " + hex(section_size),
                 "section_offset " + hex(section_offset))
+        f.seek(section_offset + 16)
+        if section_type == 'CHRM' or section_type == 'MAPM':
+            k = extract_chrm(f, path, k, section_size)
     f.close()
 if __name__ == "__main__":
     for path in sys.argv[1:]:
