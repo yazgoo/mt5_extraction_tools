@@ -3,6 +3,7 @@ import struct
 import bpy
 import os
 import tempfile
+import re
 from mathutils import Vector
 def look_at(obj_camera, point):
     loc_camera = obj_camera.matrix_world.to_translation()
@@ -304,7 +305,10 @@ def load_xb01(f, xb01, i, file_size, path, position):
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
-            if load_image(mesh, (path + "#%02d.png") % (texture + 1)):
+            texture_name = (path + "#%02d.png") % (texture + 1)
+            texture_name = re.sub(r"PKS....MT7", "PKF", texture_name)
+            print("texture", texture_name)
+            if load_image(mesh, texture_name):
                 set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
             #o.scale = scale
 def load_mt7(path):
