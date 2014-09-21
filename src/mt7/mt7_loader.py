@@ -70,6 +70,17 @@ def load_image(mesh, img_name):
     mtex.use_map_density = True 
     mtex.mapping = 'FLAT' 
     mesh.materials.append(mat)
+    # [x] transparency
+    #       set transparency to z-transparency
+    mat.use_transparency = True
+    # material options
+    #   - face textures
+    mat.use_face_texture = True
+    #   - face textures alpha
+    mat.use_face_texture_alpha = True
+    #   - uv project
+    mat.use_uv_project = True
+    mat.use_transparent_shadows = True
     return True
 def set_texture_coordinates(o, me, coords, faces):
     uvtex = me.uv_textures.new()

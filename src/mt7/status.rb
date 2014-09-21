@@ -35,10 +35,12 @@ def get_previous id
     i = _ids.index id
     _ids[(i == 0 or i == nil) ? 0 : i - 1]
 end
+$commits = {}
 def describe_commit id
-    Hash[{date: :cd, epoch: :ct, text: :B}.map do |x, y|
-        [x, `git log --format=%#{y.to_s} -n 1 #{id} #{$repository}`]
-    end]
+    if $commits[id].nil?
+        $commits[id] = eval `git log --format='{date: "%cd", epoch: "%ct", text: "%B"}' -n 1 '#{id}'`
+    end
+    $commits[id]
 end
 get '/' do
     builder(format: :html) do |x|
@@ -49,7 +51,6 @@ get '/' do
             min = _ids.collect { |r| score(r)[:i] }.min
             _ids.each do |r|
                 commit = describe_commit r
-                p commit
                 x.tr do
                     x.td { x.a r, href: "/renders/#{r}", class: "commit" }
                     x.td commit[:text]
