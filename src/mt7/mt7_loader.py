@@ -4,6 +4,7 @@ import bpy
 import os
 import tempfile
 import re
+import math
 from mathutils import Vector
 def look_at(obj_camera, point):
     loc_camera = obj_camera.matrix_world.to_translation()
@@ -122,7 +123,11 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             f.seek(pos)
             if pos + 10 > file_size: break
             print("test " + hex(f.tell()))
-            position0 = [ struct.unpack('f', f.read(4))[0] for i in range(10)]
+            position0 = [ struct.unpack('I', f.read(4))[0] ]  \
+                + [ struct.unpack('f', f.read(4))[0] for i in range(3 )] \
+                + [ [struct.unpack('H', f.read(2))[0] * 2 * math.pi / 0xffff for i in range(2)] for i in range(3)] \
+                + [ struct.unpack('f', f.read(4))[0] for i in range(3)]
+            print("position0", position0)
             #f.read(40 - 16)
             xb01 = struct.unpack('I', f.read(4))[0]
             next_pos = struct.unpack('I', f.read(4))[0] # sometime the initial pos table misses elements, they are around there
@@ -138,7 +143,7 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
-            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], floats3[m+6:m+9]])
+            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], [position0[4][1]] + position0[5]])
 #            print("position0")
 #            print(position0)
 #            print("lol")
@@ -264,7 +269,7 @@ def extract_faces_verbose(f, path, floats_start, textures, faces):
             for k in range(size): 
                 a = struct.unpack('h', f.read(2))[0]
                 faces.append(a)
-def load_xb01(f, xb01, i, file_size, path, position):
+def load_xb01(f, xb01, i, file_size, path, position, rotation):
         f.seek(xb01)
         print("   xb01 " + str(i) + " @" + hex(f.tell()))
         if xb01 + 7 * 4 > file_size: return
@@ -318,6 +323,7 @@ def load_xb01(f, xb01, i, file_size, path, position):
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
+            o.rotation_euler = rotation
             texture_name = (path + "#%02d.png") % (texture + 1)
             texture_name = re.sub(r"PKS....MT7", "PKF", texture_name)
             texture_name = re.sub(r"MAPS.MT7", "MPK00.PKF", texture_name)
@@ -360,7 +366,7 @@ def load_mt7(path):
         float2 = float4 = []
         if not xb01 == 0:
             i += 1
-            load_xb01(f, xb01, i, file_size, path, position)
+            load_xb01(f, xb01, i, file_size, path, position, rotation)
     f.close()
 def remove_cube():
     scene = bpy.context.scene
