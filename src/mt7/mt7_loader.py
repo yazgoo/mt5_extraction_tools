@@ -125,7 +125,7 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             print("test " + hex(f.tell()))
             position0 = [ struct.unpack('I', f.read(4))[0] ]  \
                 + [ struct.unpack('f', f.read(4))[0] for i in range(3 )] \
-                + [ [struct.unpack('H', f.read(2))[0] * 2 * math.pi / 0xffff for i in range(2)] for i in range(3)] \
+                + [ struct.unpack('I', f.read(4))[0] * 2 * math.pi / 0xffff for i in range(3)] \
                 + [ struct.unpack('f', f.read(4))[0] for i in range(3)]
             print("position0", position0)
             #f.read(40 - 16)
@@ -143,7 +143,9 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
-            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6], [position0[4][1]] + position0[5]])
+            print("coucou", position0[4] + position0[5] + position0[6])
+            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6],
+                [position0[4], position0[5], position0[6]]])
 #            print("position0")
 #            print(position0)
 #            print("lol")
@@ -166,7 +168,7 @@ def extract_faces(f, path, floats_start, textures, faces):
         delta = 4 * (_next_count - 1)
         _next = f.tell() + delta
         if _type == 0:
-            f.read(5 * 4)
+            current = f.read(5 * 4)
         elif _type == 0x10:
             print("UGUU42 @" + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
             f.read(4)
@@ -175,14 +177,15 @@ def extract_faces(f, path, floats_start, textures, faces):
             f.seek(_next)
         elif _type == 0x4:
             # TODO find out what these floats are for
-            print([struct.unpack('f', f.read(4))[0] for i in range(_next_count - 1)])
+            print("type 4", [struct.unpack('f', f.read(4))[0] for i in range(_next_count - 1)])
         elif _type == 0xb:
             f.read(4)
             textures[len(faces)] = struct.unpack('I', f.read(4))[0] 
             print("texture ", textures[len(faces)])
-            f.read(delta - 8)
+            current = f.read(delta - 8)
         else:
             current = f.read(delta)
+            #print("other", _type, "@" + hex(f.tell()), [hex(i) for i in struct.unpack(str(int(len(current)/2))+'H', current)])
 def extract_faces2(f, path, floats_start, textures, faces):
     f.read(4 * 13)
     while True:
