@@ -143,8 +143,8 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
-            print("coucou", position0[4] + position0[5] + position0[6])
-            xb01s.append([xb01, position0[m+1:m+4], floats3[m+3:m+6],
+            print("position0 2", [position0[4], position0[5], position0[6]])
+            xb01s.append([xb01, position0[m+1:m+4], position0[m+7:m+10],
                 [position0[4], position0[5], position0[6]]])
 #            print("position0")
 #            print(position0)
@@ -272,7 +272,7 @@ def extract_faces_verbose(f, path, floats_start, textures, faces):
             for k in range(size): 
                 a = struct.unpack('h', f.read(2))[0]
                 faces.append(a)
-def load_xb01(f, xb01, i, file_size, path, position, rotation):
+def load_xb01(f, xb01, i, file_size, path, position, rotation, scale):
         f.seek(xb01)
         print("   xb01 " + str(i) + " @" + hex(f.tell()))
         if xb01 + 7 * 4 > file_size: return
@@ -327,6 +327,7 @@ def load_xb01(f, xb01, i, file_size, path, position, rotation):
             bpy.context.scene.objects.link(o)
             o.location = position
             o.rotation_euler = rotation
+            o.scale = scale
             texture_name = (path + "#%02d.png") % (texture + 1)
             texture_name = re.sub(r"PKS....MT7", "PKF", texture_name)
             texture_name = re.sub(r"MAPS.MT7", "MPK00.PKF", texture_name)
@@ -369,7 +370,7 @@ def load_mt7(path):
         float2 = float4 = []
         if not xb01 == 0:
             i += 1
-            load_xb01(f, xb01, i, file_size, path, position, rotation)
+            load_xb01(f, xb01, i, file_size, path, position, rotation, scale)
     f.close()
 def remove_cube():
     scene = bpy.context.scene
