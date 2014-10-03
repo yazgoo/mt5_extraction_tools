@@ -18,7 +18,7 @@ def read_texn(f):
     f.seek(20, 1)
     return {'next': start + size, 'size': start + size - f.tell()}
 def extract_texture(f, path, size, k):
-    pvr = (path + "#%02d.pvr") % k
+    pvr = (path + "_%02d.pvr") % k
     png = os.path.splitext(pvr)[0] + ".png"
     if not os.path.isfile(png):
         if not os.path.isfile(pvr):

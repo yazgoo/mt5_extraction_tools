@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import mathutils
 import struct
 import bpy
 import os
@@ -70,6 +71,9 @@ def load_image(mesh, img_name):
     mtex.emission_color_factor = 0.5
     mtex.use_map_density = True 
     mtex.mapping = 'FLAT' 
+    # this below allows the alpha
+    # to be taken into account when casting a shadow
+    #mtex.blend_type = 'DARKEN'
     mesh.materials.append(mat)
     # [x] transparency
     #       set transparency to z-transparency
@@ -113,10 +117,10 @@ def load_texture(f, texture_start, path):
             dest.write(f.read(size))
             dest.close()
         png = os.path.splitext(pvr)[0] + ".png"
+        png = png.replace("#", "_")
         if not os.path.isfile(png):
-            os.system(os.environ.get("PVR2PNG") + " " + pvr)
+            os.system(os.environ.get("PVR2PNG") + " " + pvr + " " + png)
         i += 1
-
 def get_xb01s(f, positions, xb01s, file_size, offset):
     for pos in positions:
         if not pos == 0:
@@ -125,7 +129,7 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             print("test " + hex(f.tell()))
             position0 = [ struct.unpack('I', f.read(4))[0] ]  \
                 + [ struct.unpack('f', f.read(4))[0] for i in range(3 )] \
-                + [ struct.unpack('I', f.read(4))[0] * 2 * math.pi / 0xffff for i in range(3)] \
+                + [ struct.unpack('H', f.read(2))[0] * 2 * math.pi / 65536 for i in range(6)] \
                 + [ struct.unpack('f', f.read(4))[0] for i in range(3)]
             print("position0", position0)
             #f.read(40 - 16)
@@ -143,9 +147,15 @@ def get_xb01s(f, positions, xb01s, file_size, offset):
             floats3 = [ struct.unpack('f', f.read(4))[0] for i in range(9)]
             m = 0
             # xb01 position scale rotation
-            print("position0 2", [position0[4], position0[5], position0[6]])
+            print("position0 2", [position0[5], position0[7], position0[9]])
+            rotation = [position0[4], position0[6], position0[8]]
+#            rotation = [position0[4], position0[6], position0[5]]
+#            rotation = [position0[5], position0[6], position0[4]]
+#            rotation = [position0[5], position0[4], position0[6]]
+#            rotation = [position0[6], position0[4], position0[5]]
+#            rotation = [position0[6], position0[5], position0[4]]
             xb01s.append([xb01, position0[m+1:m+4], position0[m+7:m+10],
-                [position0[4], position0[5], position0[6]]])
+                rotation])
 #            print("position0")
 #            print(position0)
 #            print("lol")
@@ -322,19 +332,27 @@ def load_xb01(f, xb01, i, file_size, path, position, rotation, scale):
             mesh = bpy.data.meshes.new("mesh datablock name" + str(i) + "_" + str(k))
             mesh.from_pydata(verts, [], actual_faces)
             mesh.update()
-            o = bpy.data.objects.new("object_" + str(i) + "_" + str(k), mesh)
+            object_name = "object_" + str(i) + "_" + str(k)
+            o = bpy.data.objects.new(object_name, mesh)
             o.data = mesh 
             bpy.context.scene.objects.link(o)
             o.location = position
+            print("rotation", object_name, [x * 360 / (2 * math.pi) for x in rotation])
             o.rotation_euler = rotation
-            o.scale = scale
-            texture_name = (path + "#%02d.png") % (texture + 1)
+#            o.rotation_mode = 'XYZ'
+#            x = mathutils.Matrix.Rotation((rotation[0]), 4, 'X')
+#            y = mathutils.Matrix.Rotation((rotation[1]), 4, 'Y')
+#            z = mathutils.Matrix.Rotation((rotation[2]), 4, 'Z')
+#            mesh.transform(x)
+#            mesh.transform(y)
+#            mesh.transform(z)
+            #o.scale = scale
+            texture_name = (path + "_%02d.png") % (texture + 1)
             texture_name = re.sub(r"PKS....MT7", "PKF", texture_name)
             texture_name = re.sub(r"MAPS.MT7", "MPK00.PKF", texture_name)
             print("texture", texture_name)
             if load_image(mesh, texture_name):
                 set_texture_coordinates(o, mesh, texture_coordinates, actual_faces)
-            #o.scale = scale
 def load_mt7(path):
     print("parsing " + path)
     file_size = os.path.getsize(path)
@@ -383,6 +401,11 @@ def remove_cube():
 if __name__ == "__main__":
     remove_cube()
     mt7 = os.environ.get("MT7")
+    out = os.environ.get("OUT")
+    root = os.environ.get("ROOT")
     load_mt7(mt7)
-    render_to_image(tempfile.gettempdir() + "/" + mt7.replace("/", "_"))
-
+    if root != None: mt7 = mt7.replace(root, "")
+    if out == None: out = tempfile.gettempdir()
+    out = out + "/" + mt7.replace("/", ",").replace(",,", ",")
+    render_to_image(out)
+    bpy.ops.export_scene.obj(filepath = (out + ".obj"), path_mode = 'COPY')

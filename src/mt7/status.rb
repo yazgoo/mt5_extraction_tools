@@ -9,7 +9,17 @@ def cleanup_path r
     r.gsub($source.gsub('/', '_'), '').gsub('_', '/')
 end
 def png commit, id
-    "#{$renders}/#{commit}/#{id}.png"
+    result = "#{$renders}/#{commit}/#{id}.png"
+    if File.exist? result
+        result
+    else
+        result = result.gsub(/_([0-9]+)/, '#\1')
+        if File.exists? result
+            result
+        else
+            result.sub(/#([0-9]+)/, '_\1')
+        end
+    end
 end
 def mt7s
     Dir["#{$source}/**/*.MT7"].map { |a| a.gsub('/', '_').gsub("#", "-sharp-") }
