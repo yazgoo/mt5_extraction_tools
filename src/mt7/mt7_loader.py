@@ -183,6 +183,7 @@ def extract_faces(f, path, floats_start, textures, faces):
             print("UGUU42 @" + hex(f.tell()) + " type: " + str(_type) + " " + str(_next_count) + " " + hex(_next));
             f.read(4)
             extract_faces_simple(f, faces, floats_start)
+            print("UGUU42", faces)
             print("UGUU42 faces done @" + hex(f.tell()));
             f.seek(_next)
         elif _type == 0x4:
