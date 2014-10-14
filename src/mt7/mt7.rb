@@ -1,3 +1,4 @@
+require 'opal'
 class MT7
     def initialize path
         @file_size = File.stat(path).size
@@ -101,7 +102,7 @@ class MT7
     end
     def each_object
         read :unsigned_integer
-        texture_start = read :unsigned_integer
+        @texture_start = read :unsigned_integer
         positions = get_positions
         get_xb01s(positions).each do |xb01|
             yield parse_xb01(xb01)
@@ -120,12 +121,23 @@ class MT7
     def x a, b
         operation(a, b) { |x, y| x * y }
     end
+    def each_texture_with_index
+        @f.seek @texture_start
+        a, b, count = 3.times.each.collect { read :unsigned_integer }
+        texture_addresses = count.times.each.collect { read :unsigned_integer }
+        texture_addresses.each_with_index do |texture_address, i|
+            @f.seek texture_address
+            @f.read 16
+            yield @f.read(28 + read(:unsigned_integer)), i
+        end
+    end
     def to_obj
         i = 0
         delta = 1
         mt7 = self
-        each_object do |object|
-            Wavefront.new do
+        texture_max = 0
+        obj = Wavefront.new do
+            mt7.each_object do |object|
                 o "object_#{i}"
                 object[:vertices].each do |vertex|
                     v mt7.p(mt7.x(vertex,
@@ -133,7 +145,9 @@ class MT7
                 end
                 object[:texture_coordinates].each { |coords| vt coords }
                 object[:normals].each { |normal| n normal }
-                object[:faces].each do |face|
+                object[:faces].each.with_index do |face, t|
+                    usemtl "material_#{object[:textures][t]}"
+                    texture_max = t if t > texture_max
                     face.each_slice(3).to_a.each do |a|
                         f a, delta
                     end
@@ -142,9 +156,46 @@ class MT7
             end
             i += 1
         end
+        pngs = []
+        mtl = Wavefront::Material.new do
+            mt7.each_texture_with_index do |data, i|
+                png_name = "name_#{i}.png"
+                pngs << Pvrx2png.new(data, png_name)
+                material "material_#{i}", png_name 
+            end
+        end
+        [obj, mtl, pngs]
+    end
+end
+class Pvrx2png
+    def initialize data, name
+        @name = name
+        @data = data
+        @png = %x{ pvrx2png(data, name) }
     end
 end
 class Wavefront
+    def puts a
+        @contents << a
+    end
+    class Material
+        def material name, image
+            @contents += ["newmtl name",
+            "Ns 96.078431",
+            "Ka 0.000000 0.000000 0.000000",
+            "Kd 0.640000 0.640000 0.640000",
+            "Ks 0.500000 0.500000 0.500000",
+            "Ni 1.000000",
+            "d 1.000000",
+            "illum 2",
+            "map_Kd #{image}",
+            "map_d #{image}"]
+        end
+        def initialize &block
+            @contents = []
+            instance_eval &block
+        end
+    end
     def f items, delta
         puts "f #{items.collect { |x| x + delta }.collect { |x| "#{x}/#{x}/#{x}" }.join " "}"
     end
@@ -159,9 +210,10 @@ class Wavefront
         puts "#{name} #{args}"
     end
     def initialize &block
+        @contents = []
         instance_eval &block
     end
 end
-MT7.new(ARGV[0]) do |mt7|
-    mt7.to_obj
-end
+#MT7.new(ARGV[0]) do |mt7|
+#    p mt7.to_obj
+#end
